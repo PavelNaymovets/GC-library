@@ -5,7 +5,7 @@
 ## Элементы UI:
 
 1. Планировщик задач (task manager).
-Ссылка на класс [тут](https://github.com/PavelNaymovets/GC-library/tree/master/taskmanager).
+Ссылка [тут](https://github.com/PavelNaymovets/GC-library/tree/master/taskmanager).
 
 Функции:
 * Добавить задачу пользователю;
