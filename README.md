@@ -5,7 +5,7 @@
 ## Элементы UI:
 
 1. Планировщик задач (task manager).
-Ссылка [тут](https://github.com/PavelNaymovets/GC-library/tree/master/taskmanager).
+Ссылка [тут](https://github.com/PavelNaymovets/GC-library/tree/master/api/taskmanager).
 
 Функции:
 * Добавить задачу пользователю;
@@ -13,7 +13,7 @@
 * Управление задачами пользователя: выполнить, удалить, вернуть в активные из выполненных, обновить текст задачи.
 
 2. Регистрация дохода (income registration).
-Ссылка [тут](https://github.com/PavelNaymovets/GC-library/tree/master/incomeRegistration).
+Ссылка [тут](https://github.com/PavelNaymovets/GC-library/tree/master/api/incomeRegistration).
 
 Функции:
 * Регистрация дохода пользователя;
