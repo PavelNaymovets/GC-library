@@ -1,15 +1,16 @@
 <?php
-        
+    
     //-----------------------------------------------------
-    // ПОЛУЧЕНИЕ ВСЕХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ
+    // РЕГИСТРАЦИЯ ДОХОДА ПОЛЬЗОВАТЕЛЯ
     //-----------------------------------------------------
     
     /** 
-    * Endpoint для получения задач пользователя из БД из таблицы tasks:
+    * Endpoint для регистрации дохода пользователя в БД в таблице income:
     * 
-    * https://hmns.in/hmnsgc/api/taskmanager/getAllTasks.php?uid=1
+    * https://hmns.in/hmnsgc/api/incomeregistration/incomeReg.php?uid=2147483647&income=1000
     * 
-    * Параметры запроса: uid - уникальный номер пользователя.
+    * Параметры запроса: uid - уникальный номер пользователя;
+    *                    income - доход пользователя.
     */
     
     /* ПОДКЛЮЧЕНИЕ КЛАССОВ РАБОТЫ С БАЗОЙ ДАННЫХ, GET/POST ЗАПРОСАМИ */   
@@ -19,7 +20,7 @@
     require_once '../../jsonHandler/jsonHandler.php';
     
     /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ GET ЗАПРОСА */
-    $params = array('uid');
+    $params = array('uid', 'income');
     $getHandler = new GetPostHandler("GET", $params);
     $getData = $getHandler->getDataFromQuery();
     
@@ -29,9 +30,12 @@
     $mysql = $connect->getConnection();
     $queryToDataBase = new QueryToDataBase($mysql);
     
-    /* ПОЛУЧЕНИЕ ВСЕХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ */
-    $result = $queryToDataBase->getAllTasks($getData['uid']);
-
+    /* РЕГИСТРАЦИЯ ДОХОДА И ПОЛУЧЕНИЕ ОБЩЕГО ДОХОДА ПОЛЬЗОВАТЕЛЯ ЗА ВСЕ ВРЕМЯ  */
+    $result = $queryToDataBase->getTotalUserIncome($getData['uid'], $getData['income']);
+    
     /* ВЫВОД ИНФОРМАЦИИ В ФОРМАТЕ JSON НА СТРАНИЦУ */
     JsonHandler::echoJSON($result);
+    
+    /* ЗАКРЫВАЮ СОЕДИНЕНИЕ С БД */
+    $connect->closeConnection();
 ?>

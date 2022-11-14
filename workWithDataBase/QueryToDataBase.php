@@ -315,7 +315,7 @@
         }
         
         //-----------------------------------------------------
-        // УПРАВЛЕНИЕ ЗАДАЧАМИ ПОЛЬЗОВАТЕЛЯ
+        // ПОЛУЧЕНИЕ ВСЕХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ
         //-----------------------------------------------------
         
         /* ФАЙЛ: getAllTasks.php */
@@ -346,7 +346,7 @@
          * return ['id_seqNumber', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        function getActiveTasks($uid){
+        public function getActiveTasks($uid){
             $result = $this->selectQuery("SELECT id, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 1");
             if($result->num_rows > 0){
                 while($row = $result->fetch_assoc()) {
@@ -365,7 +365,7 @@
          * return ['id_seqNumber', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        function getDoneTasks($uid){
+        public function getDoneTasks($uid){
             $result = $this->selectQuery("SELECT id, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 0");
             if($result->num_rows > 0){
                 $doneTasks = [];
@@ -378,5 +378,65 @@
                 return 0;
             }
         }
+        
+        //=====================================================
+        // РЕГИСТРАЦИЯ ДОХОДА ПОЛЬЗОВАТЕЛЯ
+        //=====================================================
+        
+        /* ФАЙЛ: incomeReg.php */
+        
+        /**
+         * ПАРАМЕТРЫ ФУНКЦИЙ:
+         * 
+         * $uid - уникальный номер пользователя;
+         * $income - доход пользователя.
+         */
+         
+        /** 
+         * ОГРАНИЧЕНИЯ ДЛЯ БД:
+         * 
+         * Таблица с доходом должна иметь название - income.
+         * Таблица с доходом должна иметь следующие названия и порядок столбцов: 
+         * 
+         *  id, uid, income, dataStamp
+         */
+         
+        /** 
+         * ПОЛУЧЕНИЕ ОБЩЕГО ДОХОДА ПОЛЬЗОВАТЕЛЯ: 
+         * 
+         * Функция возвращает доход зарегистрированный за все время с учетом нового зарегистрированного дохода.
+         * 
+         * return ['success','uid', 'income', 'totalIncome'] - запрос выполнен.
+         * return 0 - запрос не выполнен.
+         */
+         public function getTotalUserIncome($uid, $income) {
+             $result = $this->putUserIncomeInDataBase($uid, $income);
+             if($result == 1) {
+                $selectQuery = $this->selectQuery("SELECT SUM(income) as totalIncome FROM income WHERE uid = $uid");
+                $row = $selectQuery->fetch_assoc();
+                $totalIncome = $row["totalIncome"];
+                return [
+                    'success' => 'ok',
+                    'uid' => $uid,
+                    'income' => $income,
+                    'totalIncome' => $totalIncome
+                    ];
+             } else {
+                 return 0;
+             }
+         }
+         
+         /** 
+         * РЕГИСТРАЦИЯ ТЕКУЩЕГО ДОХОДА ПОЛЬЗОВАТЕЛЯ:
+         * 
+         * Функция регистрирует доход пользователя в БД.
+         * 
+         * return 1 - запрос выполнен.
+         * return 0 - запрос не выполнен.
+         */
+         public function putUserIncomeInDataBase($uid, $income) {
+             $result = $this->insertIntoQuery("INSERT INTO income(uid, income) VALUES ($uid, $income)");
+             return $result;
+         }
     }
 ?>
