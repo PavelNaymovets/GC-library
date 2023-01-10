@@ -109,6 +109,7 @@
          * $taskId - id задачи;
          * $newText - новый текст задачи;
          * $seqNumber - порядковый номер задачи у конкретного пользователя;
+         * $week - порядковый номер недели
          */
          
         /** 
@@ -117,7 +118,7 @@
          * Таблица с задачами должна иметь название - tasks.
          * Таблица с задачами должна иметь следующие названия и порядок столбцов: 
          * 
-         *  id, uid, taskText, isActive, seqNumber, dataStamp
+         *  id, uid, taskText, isActive, seqNumber, week, dataStamp
          */
          
         /** 
@@ -127,15 +128,15 @@
          * 
          * Текст задачи ($taskText) должен передаваться в '' или в "" кавычках. Иначе не выполнится SQL запрос.
          * 
-         * return ['success','uid','id', 'seqNumber', 'taskText'] - запрос выполнен.
+         * return ['success','uid','id', 'seqNumber', 'week', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        public function putTaskInDataBase($uid, $taskText) {
-            $seqNumber = $this->getCountActiveTasks($uid);
+        public function putTaskInDataBase($uid, $taskText, $week) {
+            $seqNumber = $this->getCountActiveTasksWeek($uid, $week);
             $seqNumber += 1;
-            $result = $this->insertIntoQuery("INSERT INTO tasks(uid, taskText, isActive, seqNumber) VALUES ($uid, $taskText,'1',$seqNumber)");
+            $result = $this->insertIntoQuery("INSERT INTO tasks(uid, taskText, isActive, seqNumber, week) VALUES ($uid, $taskText,'1',$seqNumber, $week)");
             if($result == 1){
-                $idQuery = $this->selectQuery("SELECT id FROM tasks WHERE uid = $uid AND seqNumber = $seqNumber");
+                $idQuery = $this->selectQuery("SELECT id FROM tasks WHERE uid = $uid AND seqNumber = $seqNumber AND week = $week");
                 $row = $idQuery->fetch_assoc();
                 $taskId = $row["id"];
                 return [
@@ -143,6 +144,7 @@
                     'uid' => $uid,
                     'id' => $taskId,
                     'seqNumber' => $seqNumber,
+                    'week' => $week,
                     'taskText' => $taskText
                     ];
             } else {
@@ -157,14 +159,21 @@
             return $result->num_rows;
         }
         
-        /* ВОЗВРАТ КОЛИЧЕСТВА АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ */
+        /* ВОЗВРАТ КОЛИЧЕСТВА АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ КОНКРЕТНОЙ НЕДЕЛИ */
+        public function getCountActiveTasksWeek($uid, $week) {
+            $result = $this->selectQuery("SELECT * FROM tasks WHERE uid = $uid AND isActive = 1 AND week = $week");
+            
+            return $result->num_rows;
+        }
+        
+        /* ВОЗВРАТ КОЛИЧЕСТВА АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ ПО ВСЕМ НЕДЕЛЯМ */
         public function getCountActiveTasks($uid) {
             $result = $this->selectQuery("SELECT * FROM tasks WHERE uid = $uid AND isActive = 1");
             
             return $result->num_rows;
         }
         
-        /* ВОЗВРАТ КОЛИЧЕСТВА НЕ АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ */
+        /* ВОЗВРАТ КОЛИЧЕСТВА НЕ АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ ПО ВСЕМ НЕДЕЛЯМ */
         public function getCountNotActiveTasks($uid) {
             $result = $this->selectQuery("SELECT * FROM tasks WHERE uid = $uid AND isActive = 0");
             
@@ -184,19 +193,19 @@
          * Функция делает задачу не активной. isActive = 0 в БД. 
          * Обновляет порядковый номер следующих за этой задач в БД.
          * 
-         * return ['success','uid','id', 'seqNumber', 'taskText'] - запрос выполнен.
+         * return ['success','uid','id', 'seqNumber', 'week', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        public function taskIsDone($taskId, $uid) {
+        public function taskIsDone($taskId, $uid, $week) {
             $data = $this->getSeqNumberAndTaskText($taskId, $uid);
-            $activeTasks = $this->getCountActiveTasks($uid);
+            $activeTasks = $this->getCountActiveTasksWeek($uid, $week);
             $result = $this->updateQuery("UPDATE tasks SET isActive = 0 WHERE id = $taskId AND uid = $uid");
             if($result == 1){
                 if($data["seqNumber"] != $activeTasks) { //не нужно обновлять порядковый номер следующих задач, если задача последняя в списке
                     $i = $data["seqNumber"] + 1;
                 
                     for($i; $i <= $activeTasks; $i++) {
-                        $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i AND uid = $uid AND isActive = 1");
+                        $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i AND uid = $uid AND isActive = 1 AND week = $week");
                     }
                 }
                 
@@ -205,6 +214,7 @@
                     'uid' => $uid,
                     'id' => $taskId,
                     'seqNumber' => $data["seqNumber"],
+                    'week' => $week,
                     'taskText' => $data["taskText"]
                     ];
             } else {
@@ -213,23 +223,23 @@
         }
         
         /** 
-         * УДАЛЕНИЕ ЗАДАЧИ ПОЛЬЗОВАТЕЛЯ:
+         * УДАЛЕНИЕ ЗАДАЧЕЙ ПОЛЬЗОВАТЕЛЯ:
          * 
          * Функция удаляет задачу из базы данных. Обновляет порядковый номер следующих за этой задач в БД.
          * 
-         * return ['success','uid','id', 'seqNumber', 'taskText'] - запрос выполнен.
+         * return ['success','uid','id', 'seqNumber', 'week', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        public function taskIsDeleted($taskId, $uid) {
+        public function taskIsDeleted($taskId, $uid, $week) {
             $data = $this->getSeqNumberAndTaskText($taskId, $uid);
-            $activeTasks = $this->getCountActiveTasks($uid);
+            $activeTasks = $this->getCountActiveTasksWeek($uid, $week);
             $result = $this->deleteQuery("DELETE FROM tasks WHERE id = $taskId AND uid = $uid");
             if($result == 1){
                 if($data["seqNumber"] != $activeTasks) { //не нужно обновлять порядковый номер следующих задач, если задача последняя в списке
                     $i = $data["seqNumber"] + 1;
                 
                     for($i; $i <= $activeTasks; $i++) {
-                        $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i AND uid = $uid AND isActive = 1");
+                        $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i AND uid = $uid AND isActive = 1 AND week = $week");
                     }
                 }
                 return [
@@ -237,6 +247,7 @@
                     'uid' => $uid,
                     'id' => $taskId,
                     'seqNumber' => $data["seqNumber"],
+                    'week' => $week,
                     'taskText' => $data["taskText"]
                     ];
             } else {
@@ -250,15 +261,20 @@
          * Функция делает завершенную задачу активной. isActive = 1 в БД. 
          * Обновляет порядковый номер следующих за этой задач в БД.
          * 
-         * return ['success','uid','id', 'seqNumber', 'taskText'] - запрос выполнен.
+         * return ['success','uid','id', 'seqNumber', 'week', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        public function taskReturnActive($taskId, $uid) {
+        public function taskReturnActive($taskId, $uid, $week) {
             $data = $this->getSeqNumberAndTaskText($taskId, $uid);
-            $activeTasks = $this->getCountActiveTasks($uid);
+            $activeTasks = $this->getCountActiveTasksWeek($uid, $week);
             $i = $activeTasks + 2; // +2, чтобы при -2 попасть в нужную seqNumber, а при -1 получить seqNumber на 1 больше, чем было.
-            for($i; $i >= $data["seqNumber"] + 2; $i--) { // Сделано увеличение порядкового номера через вычитание, иначе БД работает неправильно. Вставляет одно число во все позиции, а нужно + 1.
-                $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i - 2 AND uid = $uid AND isActive = 1");
+            if($activeTasks == 0 && $data['seqNumber'] > 1) {
+                $result = $this->updateQuery("UPDATE tasks SET seqNumber = 1 WHERE id = $taskId AND uid = $uid");
+                $data['seqNumber'] = 1;
+            } else {
+                for($i; $i >= $data["seqNumber"] + 2; $i--) { // Сделано увеличение порядкового номера через вычитание, иначе БД работает неправильно. Вставляет одно число во все позиции, а нужно + 1.
+                    $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i - 2 AND uid = $uid AND isActive = 1 AND week = $week");
+                }
             }
             $result = $this->updateQuery("UPDATE tasks SET isActive = 1 WHERE id = $taskId AND uid = $uid");
             if($result == 1){
@@ -267,6 +283,7 @@
                     'uid' => $uid,
                     'id' => $taskId,
                     'seqNumber' => $data["seqNumber"],
+                    'week' => $week,
                     'taskText' => $data["taskText"]
                     ];
             } else {
@@ -279,11 +296,30 @@
          * 
          * Функция обновляет текст задачи.
          * 
-         * return ['success','uid','id', 'seqNumber', 'taskText'] - запрос выполнен.
+         * return ['success','uid','id', 'seqNumber', 'week', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
-        public function taskUpdateText($taskId, $uid, $newText) {
-            $result = $this->updateQuery("UPDATE tasks SET taskText = $newText WHERE id = $taskId AND uid = $uid");
+        public function taskUpdateText($taskId, $uid, $week, $newText) {
+            $selectQuery = $this->selectQuery("SELECT week FROM tasks WHERE id = $taskId");
+            $row = $selectQuery->fetch_assoc();
+            $oldWeek = $row['week'];
+            
+            if($week == $oldWeek) {
+                $result = $this->updateQuery("UPDATE tasks SET taskText = $newText WHERE id = $taskId AND uid = $uid");
+            } else {
+                $data = $this->getSeqNumberAndTaskText($taskId, $uid); //получаю порядковый номер задачи в старой неделе
+                $oldActiveTasks = $this->getCountActiveTasksWeek($uid, $oldWeek); //считаю количество активных задач в старой неделе
+                if($data["seqNumber"] != $oldActiveTasks) { //не нужно обновлять порядковый номер следующих задач, если задача последняя в списке
+                    $i = $data["seqNumber"] + 1;
+                
+                    for($i; $i <= $oldActiveTasks; $i++) {
+                        $this->updateQuery("UPDATE tasks SET seqNumber = $i - 1 WHERE seqNumber = $i AND uid = $uid AND isActive = 1 AND week = $oldWeek");
+                    }
+                }
+                $activeTasks = $this->getCountActiveTasksWeek($uid, $week);
+                $result = $this->updateQuery("UPDATE tasks SET taskText = $newText, week = $week, seqNumber = $activeTasks + 1  WHERE id = $taskId AND uid = $uid");
+            }
+            
             if($result == 1){
                 $data = $this->getSeqNumberAndTaskText($taskId, $uid);
                 
@@ -292,6 +328,7 @@
                     'uid' => $uid,
                     'id' => $taskId,
                     'seqNumber' => $data["seqNumber"],
+                    'week' => $week,
                     'taskText' => $data["taskText"]
                     ];
             } else {
@@ -325,7 +362,7 @@
          * 
          * Функция возвращает активные и выполненные задачи пользователя.
          * 
-         * return ['success','uid', active['id', 'seqNumber', 'taskText'], done['id', 'seqNumber', 'taskText']] - запрос выполнен.
+         * return ['success','uid', active['id', 'week', 'seqNumber', 'taskText'], done['id', 'week', 'seqNumber', 'taskText']] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
         public function getAllTasks($uid) {
@@ -343,14 +380,14 @@
         /** 
          * ВОЗВРАТ ВСЕХ АКТИВНЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ:
          * 
-         * return ['id_seqNumber', 'taskText'] - запрос выполнен.
+         * return ['id_week_seqNumber', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
         public function getActiveTasks($uid){
-            $result = $this->selectQuery("SELECT id, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 1");
+            $result = $this->selectQuery("SELECT id, week, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 1");
             if($result->num_rows > 0){
                 while($row = $result->fetch_assoc()) {
-                    $activeTasks[$row["id"] . '_' .$row["seqNumber"]] = $row["taskText"]; //из-за коллизий применил такой способ добавления элементов в ассоциативный массив
+                    $activeTasks[$row["id"] . '_' .$row["week"] . '_' .$row["seqNumber"]] = $row["taskText"]; //из-за коллизий применил такой способ добавления элементов в ассоциативный массив
                 }
                 
                 return $activeTasks;
@@ -362,15 +399,14 @@
         /** 
          * ВОЗВРАТ ВСЕХ ВЫПОЛНЕННЫХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ:
          * 
-         * return ['id_seqNumber', 'taskText'] - запрос выполнен.
+         * return ['id_week_seqNumber', 'taskText'] - запрос выполнен.
          * return 0 - запрос не выполнен.
          */
         public function getDoneTasks($uid){
-            $result = $this->selectQuery("SELECT id, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 0");
+            $result = $this->selectQuery("SELECT id, week, seqNumber, taskText FROM tasks WHERE uid = $uid AND isActive = 0");
             if($result->num_rows > 0){
-                $doneTasks = [];
                 while($row = $result->fetch_assoc()) {
-                    $doneTasks[$row["id"] . '_' .$row["seqNumber"]] = $row["taskText"];
+                    $doneTasks[$row["id"] . '_' .$row["week"] . '_' .$row["seqNumber"]] = $row["taskText"];
                 }
                 
                 return $doneTasks;
@@ -438,5 +474,63 @@
              $result = $this->insertIntoQuery("INSERT INTO income(uid, income) VALUES ($uid, $income)");
              return $result;
          }
+         
+        //=====================================================
+        // ОБНОВЛЕНИЕ ПОРЯДКОВОГО НОМЕРА ЗАДАЧИ ПОЛЬЗОВАТЕЛЯ
+        //=====================================================
+        
+        /* ФАЙЛ: newTasksNumbers.php */
+        
+        /**
+         * ПАРАМЕТРЫ ФУНКЦИЙ:
+         * 
+         * $uid - уникальный номер пользователя;
+         * $data - строка с данными формата: id_номер недели_порядковый номер задачи внутри этой недели.
+         * 
+         */
+         
+         /**
+         * ОБНОВЛЕНИЕ ПОРЯДКОВОГО НОМЕРА ЗАДАЧИ ПОЛЬЗОВАТЕЛЯ:
+         * 
+         * Функция обновляет порядковый номер задачи пользователя внтури недели.
+         * 
+         * return 1 - запрос выполнен.
+         * return 0 - запрос не выполнен.
+         */
+         
+        public function updateSeqNumber($uid, $week, $data) {
+            $dataSeparated = explode(" ", $data);
+            foreach ($dataSeparated as $value) {
+                $var = explode("_", $value);
+                $taskId = $var[0];
+                $seqNumber = $var[1];
+                
+                $activeTasks = $this->getCountActiveTasksWeek($uid, $week);
+                if(count($dataSeparated) == $activeTasks) {
+                    $result = $this->updateQuery("UPDATE tasks SET seqNumber = $seqNumber WHERE id = $taskId AND week = $week");
+                }
+            }
+            
+            if($result == 1) {
+                $result = $this->selectQuery("SELECT id, seqNumber FROM tasks WHERE uid = $uid AND week = $week AND isActive = 1");
+                if($result->num_rows > 0){
+                    while($row = $result->fetch_assoc()) {
+                        $newTasksNumbers[$row['id']] = $row['seqNumber'];
+                    }
+                            
+                    return [
+                            'success' => 'ok',
+                            'uid' => $uid,
+                            'week' => $week,
+                            'newTasksNumbers' => $newTasksNumbers
+                            ];
+                }
+            } else {
+                
+                return 0;
+            }
+            
+        }
+         
     }
 ?>

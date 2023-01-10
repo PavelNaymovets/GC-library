@@ -30,8 +30,9 @@
     $queryToDataBase = new QueryToDataBase($mysql);
     
     /* ПОЛУЧЕНИЕ ВСЕХ ЗАДАЧ ПОЛЬЗОВАТЕЛЯ */
+    
     $result = $queryToDataBase->getAllTasks($getData['uid']);
-
+    
     /* ВЫВОД ИНФОРМАЦИИ В ФОРМАТЕ JSON НА СТРАНИЦУ */
     JsonHandler::echoJSON($result);
 ?>

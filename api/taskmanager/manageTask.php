@@ -7,12 +7,13 @@
     /** 
     * Endpoint для управления задачей пользователя в БД в таблице tasks:
     * 
-    * https://hmns.in/hmnsgc/api/taskmanager/manageTask.php?action=done&taskId=1&uid=1
+    * https://hmns.in/hmnsgc/api/taskmanager/manageTask.php
     * 
-    * Параметры запроса: action - действие над задачей (done, delete, returnActive, update). Слово действия в запросе указывать без '' или "" кавычек.
+    * Параметры POST запроса: action - действие над задачей (done, delete, returnActive, update). Слово действия в запросе указывать без '' или "" кавычек.
     *                    Иначе не будет работать логика скрипта в блоке if else. Слово действия не чувствительно к регистру (например можно писать DONE, dOne, doNE и пр.)
     *                    taskId - id задачи в базе данных;
-    *                    uid - уникальный номер пользователя.
+    *                    uid - уникальный номер пользователя;
+    *                    week - номер недели;
     *                    newText - новый текст задачи. текст задачи. В запросе указывать в '' или в "" кавычках. Иначе не выполнится SQL запрос.
     */
     
@@ -30,9 +31,9 @@
     require_once '../../getPostHandler/GetPostHandler.php';
     require_once '../../jsonHandler/jsonHandler.php';
     
-    /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ GET ЗАПРОСА */
-    $params = array('action', 'taskId', 'uid', 'newText');
-    $getHandler = new GetPostHandler("GET", $params);
+    /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ POST ЗАПРОСА */
+    $params = array('action', 'taskId', 'uid', 'week', 'newText');
+    $getHandler = new GetPostHandler("POST", $params);
     $getData = $getHandler->getDataFromQuery();
     
     /* ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ */
@@ -43,18 +44,22 @@
     
     /* ОПЕРАЦИИ НАД ЗАДАЧЕЙ */
     $action = mb_strtolower($getData['action']);
+    $taskId = $getData['taskId']; 
+    $uid = $getData['uid'];
+    $week = $getData['week'];
+    $newText = $getData['newText'];
     
     if($action == 'done') { //задача завершена.
-        $result = $queryToDataBase->taskIsDone($getData['taskId'], $getData['uid']);
+        $result = $queryToDataBase->taskIsDone($taskId, $uid, $week);
         JsonHandler::echoJSON($result);//вывод информации в формате json на страницу.
     } else if($action == 'delete') { //задача удалена.
-        $result = $queryToDataBase->taskIsDeleted($getData['taskId'], $getData['uid']);
+        $result = $queryToDataBase->taskIsDeleted($taskId, $uid, $week);
         JsonHandler::echoJSON($result);
     } else if($action == 'returnactive') { //активность задачи возвращена.
-        $result = $queryToDataBase->taskReturnActive($getData['taskId'], $getData['uid']);
+        $result = $queryToDataBase->taskReturnActive($taskId, $uid, $week);
         JsonHandler::echoJSON($result);
     } else if($action == 'update') { //обновлен текст задачи
-        $result = $queryToDataBase->taskUpdateText($getData['taskId'], $getData['uid'], $getData['newText']);
+        $result = $queryToDataBase->taskUpdateText($taskId, $uid, $week, $newText);
         JsonHandler::echoJSON($result);
     }
     

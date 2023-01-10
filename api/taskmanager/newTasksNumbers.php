@@ -1,17 +1,17 @@
 <?php
-
+    
     //-----------------------------------------------------
-    // РЕГИСТРАЦИЯ ЗАДАЧИ В БД
+    // УПРАВЛЕНИЕ ЗАДАЧЕЙ
     //-----------------------------------------------------
     
     /** 
-    * Endpoint для регистрации задачи пользователя в БД в таблице tasks:
+    * Endpoint для управления задачей пользователя в БД в таблице tasks:
     * 
-    * https://hmns.in/hmnsgc/api/taskmanager/addTask.php
+    * https://hmns.in/hmnsgc/api/taskmanager/newTasksNumbers.php
     * 
     * Параметры POST запроса: uid - уникальный номер пользователя;
-    *                         taskText - текст задачи. В запросе указывать в '' или в "" кавычках. Иначе не выполнится SQL запрос;
-    *                         week - номер недели.
+    *                         newTasksNumbers - содержит id_номер недели_пордяковый номер задачи.
+    *                         Порядковый номер задачи содержит новый порядковый номер задачи для обновления в базе данных.
     */
     
     /* ПОДКЛЮЧЕНИЕ КЛАССОВ РАБОТЫ С БАЗОЙ ДАННЫХ, GET/POST ЗАПРОСАМИ */   
@@ -20,8 +20,8 @@
     require_once '../../getPostHandler/GetPostHandler.php';
     require_once '../../jsonHandler/jsonHandler.php';
     
-    /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ GET ЗАПРОСА */
-    $params = array('uid', 'taskText', 'week');
+    /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ POST ЗАПРОСА */
+    $params = array('uid', 'week', 'newTasksNumbers');
     $getHandler = new GetPostHandler("POST", $params);
     $getData = $getHandler->getDataFromQuery();
     
@@ -31,14 +31,13 @@
     $mysql = $connect->getConnection();
     $queryToDataBase = new QueryToDataBase($mysql);
     
-    /* РЕГИСТРАЦИЯ ЗАДАЧИ ПОЛЬЗОВАТЕЛЯ В БД */
+    /* ОБНОВЛЕНИЕ ДАННЫХ О ЗАДАЧЕ */
     $uid = $getData['uid'];
-    $taskText = $getData['taskText'];
     $week = $getData['week'];
-    $result = $queryToDataBase->putTaskInDataBase($uid, $taskText, $week);
+    $data = $getData['newTasksNumbers'];
+    $result = $queryToDataBase->updateSeqNumber($uid, $week, $data);
     
-    /* ВЫВОД ИНФОРМАЦИИ В ФОРМАТЕ JSON НА СТРАНИЦУ */
-    JsonHandler::echoJSON($result);
+    JsonHandler::echoJSON($result);//вывод информации в формате json на страницу.
     
     /* ЗАКРЫВАЮ СОЕДИНЕНИЕ С БД */
     $connect->closeConnection();

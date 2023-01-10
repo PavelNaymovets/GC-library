@@ -7,10 +7,10 @@
     /** 
     * Endpoint для регистрации дохода пользователя в БД в таблице income:
     * 
-    * https://hmns.in/hmnsgc/api/incomeregistration/incomeReg.php?uid=2147483647&income=1000
+    * https://hmns.in/hmnsgc/api/incomeregistration/incomeReg.php
     * 
-    * Параметры запроса: uid - уникальный номер пользователя;
-    *                    income - доход пользователя.
+    * Параметры POST запроса: uid - уникальный номер пользователя;
+    *                         income - доход пользователя.
     */
     
     /* ПОДКЛЮЧЕНИЕ КЛАССОВ РАБОТЫ С БАЗОЙ ДАННЫХ, GET/POST ЗАПРОСАМИ */   
@@ -21,7 +21,7 @@
     
     /* ПОЛУЧЕНИЕ ПАРАМЕТРОВ ИЗ GET ЗАПРОСА */
     $params = array('uid', 'income');
-    $getHandler = new GetPostHandler("GET", $params);
+    $getHandler = new GetPostHandler("POST", $params);
     $getData = $getHandler->getDataFromQuery();
     
     /* ПОДКЛЮЧЕНИЕ К БАЗЕ ДАННЫХ */
@@ -31,7 +31,10 @@
     $queryToDataBase = new QueryToDataBase($mysql);
     
     /* РЕГИСТРАЦИЯ ДОХОДА И ПОЛУЧЕНИЕ ОБЩЕГО ДОХОДА ПОЛЬЗОВАТЕЛЯ ЗА ВСЕ ВРЕМЯ  */
-    $result = $queryToDataBase->getTotalUserIncome($getData['uid'], $getData['income']);
+    $uid = $getData['uid'];
+    $income = $getData['income'];
+    
+    $result = $queryToDataBase->getTotalUserIncome($uid, $income);
     
     /* ВЫВОД ИНФОРМАЦИИ В ФОРМАТЕ JSON НА СТРАНИЦУ */
     JsonHandler::echoJSON($result);
