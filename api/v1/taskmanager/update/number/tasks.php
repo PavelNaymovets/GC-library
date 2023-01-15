@@ -35,7 +35,7 @@
     $taskReturner = new TaskReturner($executorQuery);
     $taskNumberUpdater = new TaskNumberUpdater($executorQuery, $taskReturner);
 
-    /* ЗАДАЧА АКТИВНА */
+    /* ОБНОВЛЕНИЕ ПОРЯДКОВОГО НОМЕРА ЗАДАЧ */
     $uid = $getData['uid'];
     $week = $getData['week'];
     $data = $getData['numbers'];

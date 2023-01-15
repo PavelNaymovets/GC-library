@@ -35,7 +35,7 @@
     $taskReturner = new TaskReturner($executorQuery);
     $taskTextUpdater = new TaskTextUpdater($executorQuery, $taskReturner);
 
-    /* ЗАДАЧА АКТИВНА */
+    /* ОБНОВЛЕНИЕ ТЕКСТА ЗАДАЧИ */
     $taskId = $getData['taskId']; 
     $uid = $getData['uid'];
     $week = $getData['week'];
